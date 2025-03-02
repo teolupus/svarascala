@@ -56,6 +56,60 @@ class WesternMusic:
         }
         
         self.solfege = ['Do', 'Di', 'Re', 'Ri', 'Mi', 'Fa', 'Fi', 'Sol', 'Si', 'La', 'Li', 'Ti']
+        
+        # Define Camelot Wheel mapping
+        # The Camelot Wheel is organized with minor keys (A) and major keys (B) 
+        # in a circle of fifths arrangement
+        self.camelot_wheel = {
+            # Major keys (B position)
+            'B': {
+                1: 'Ab',
+                2: 'Eb',
+                3: 'Bb',
+                4: 'F',
+                5: 'C',
+                6: 'G',
+                7: 'D',
+                8: 'A',
+                9: 'E',
+                10: 'B',
+                11: 'F#',
+                12: 'Db'
+            },
+            # Minor keys (A position)
+            'A': {
+                1: 'Fm',
+                2: 'Cm',
+                3: 'Gm',
+                4: 'Dm',
+                5: 'Am',
+                6: 'Em',
+                7: 'Bm',
+                8: 'F#m',
+                9: 'C#m',
+                10: 'G#m',
+                11: 'D#m',
+                12: 'A#m'
+            }
+        }
+        
+        # Reverse mapping for looking up Camelot notation from key
+        self.key_to_camelot = {}
+        for position in self.camelot_wheel:
+            for number, key in self.camelot_wheel[position].items():
+                self.key_to_camelot[key] = f"{number}{position}"
+                
+                # Add entries for enharmonic equivalents for major keys
+                if position == 'B' and key in self.enharmonic_map:
+                    enharmonic_key = self.enharmonic_map[key]
+                    self.key_to_camelot[enharmonic_key] = f"{number}{position}"
+                
+                # Add entries for enharmonic equivalents for minor keys
+                if position == 'A' and key.endswith('m'):
+                    root = key[:-1]
+                    if root in self.enharmonic_map:
+                        enharmonic_root = self.enharmonic_map[root]
+                        self.key_to_camelot[f"{enharmonic_root}m"] = f"{number}{position}"
     
     def get_frequency(self, note, octave):
         """
@@ -242,6 +296,190 @@ class WesternMusic:
                 return True, f"{num}:{denom} ratio ({harmonic_ratio:.3f})"
         
         return False, "Not a harmonic relationship"
+    
+    def get_camelot_notation(self, key, scale_type='major'):
+        """
+        Get the Camelot Wheel notation for a given key and scale type.
+        
+        Args:
+            key (str): Root note of the key (e.g., 'C', 'F#', etc.)
+            scale_type (str): Type of scale ('major' or 'minor')
+            
+        Returns:
+            str: Camelot Wheel notation (e.g., '8B' for C major)
+            
+        Examples:
+            >>> wm = WesternMusic()
+            >>> wm.get_camelot_notation('C', 'major')
+            '5B'
+            >>> wm.get_camelot_notation('Am', 'minor')
+            '5A'
+        """
+        # Handle minor keys with 'm' suffix
+        if key.endswith('m'):
+            key = key[:-1]
+            scale_type = 'minor'
+        
+        # Create key string for lookup
+        key_str = key
+        if scale_type == 'minor':
+            key_str += 'm'
+        
+        # Try to find the key in our mapping
+        if key_str in self.key_to_camelot:
+            return self.key_to_camelot[key_str]
+        
+        # If not found, try enharmonic equivalent
+        if key in self.enharmonic_map:
+            enharmonic_key = self.enharmonic_map[key]
+            enharmonic_key_str = enharmonic_key
+            if scale_type == 'minor':
+                enharmonic_key_str += 'm'
+            
+            if enharmonic_key_str in self.key_to_camelot:
+                return self.key_to_camelot[enharmonic_key_str]
+        
+        # If still not found, return None
+        # This might happen if a non-standard key is provided
+        return None
+    
+    def get_key_from_camelot(self, camelot_notation):
+        """
+        Get the musical key from a Camelot Wheel notation.
+        
+        Args:
+            camelot_notation (str): Camelot Wheel notation (e.g., '8B')
+            
+        Returns:
+            tuple: (key, scale_type) - e.g., ('C', 'major')
+            
+        Examples:
+            >>> wm = WesternMusic()
+            >>> wm.get_key_from_camelot('5B')
+            ('C', 'major')
+            >>> wm.get_key_from_camelot('5A')
+            ('A', 'minor')
+        """
+        # Parse the Camelot notation
+        if not camelot_notation or len(camelot_notation) < 2:
+            raise ValueError("Invalid Camelot notation. Format should be like '8B'.")
+        
+        # Get number and position
+        number = int(camelot_notation[:-1])
+        position = camelot_notation[-1].upper()
+        
+        if position not in ['A', 'B']:
+            raise ValueError("Invalid Camelot position. Should be 'A' or 'B'.")
+        
+        if number < 1 or number > 12:
+            raise ValueError("Invalid Camelot number. Should be between 1 and 12.")
+        
+        # Get the key from the Camelot Wheel
+        key = self.camelot_wheel[position][number]
+        
+        # Determine scale type and clean key name
+        if position == 'A':  # Minor
+            scale_type = 'minor'
+            key = key[:-1]  # Remove 'm' suffix
+        else:  # Major
+            scale_type = 'major'
+        
+        return (key, scale_type)
+    
+    def get_compatible_keys(self, camelot_notation):
+        """
+        Get compatible keys for harmonic mixing based on Camelot Wheel.
+        
+        Args:
+            camelot_notation (str): Camelot Wheel notation (e.g., '8B')
+            
+        Returns:
+            dict: Dictionary of compatible keys and their Camelot notations
+            
+        Examples:
+            >>> wm = WesternMusic()
+            >>> compatible = wm.get_compatible_keys('5B')
+            >>> '5A' in compatible
+            True
+        """
+        if not camelot_notation or len(camelot_notation) < 2:
+            raise ValueError("Invalid Camelot notation. Format should be like '8B'.")
+        
+        # Parse the Camelot notation
+        number = int(camelot_notation[:-1])
+        position = camelot_notation[-1].upper()
+        
+        if position not in ['A', 'B']:
+            raise ValueError("Invalid Camelot position. Should be 'A' or 'B'.")
+        
+        if number < 1 or number > 12:
+            raise ValueError("Invalid Camelot number. Should be between 1 and 12.")
+        
+        # Build dictionary of compatible keys
+        compatible = {}
+        
+        # Same number, different position (relative major/minor)
+        opposite_position = 'A' if position == 'B' else 'B'
+        relative_key = f"{number}{opposite_position}"
+        key, scale_type = self.get_key_from_camelot(relative_key)
+        compatible[relative_key] = f"{key}{'m' if scale_type == 'minor' else ''}"
+        
+        # Same position, adjacent numbers (+1, -1) (perfect fifth transitions)
+        for adj in [-1, 1]:
+            adj_number = (number + adj) % 12
+            if adj_number == 0:
+                adj_number = 12
+            adj_key = f"{adj_number}{position}"
+            key, scale_type = self.get_key_from_camelot(adj_key)
+            compatible[adj_key] = f"{key}{'m' if scale_type == 'minor' else ''}"
+        
+        # Diagonal movement (energy boost/drop)
+        diagonal_number = (number + 1) % 12
+        if diagonal_number == 0:
+            diagonal_number = 12
+        diagonal_key = f"{diagonal_number}{opposite_position}"
+        key, scale_type = self.get_key_from_camelot(diagonal_key)
+        compatible[diagonal_key] = f"{key}{'m' if scale_type == 'minor' else ''}"
+        
+        return compatible
+    
+    def get_scale_with_camelot(self, root_note, octave, scale_type='major'):
+        """
+        Get scale with Camelot Wheel information.
+        
+        Args:
+            root_note (str): Root note of the scale (e.g., 'C', 'F#', etc.)
+            octave (int): Octave number for the root note
+            scale_type (str): Type of scale ('major' or 'minor')
+            
+        Returns:
+            dict: Dictionary with frequencies, Camelot notation, and compatible keys
+            
+        Examples:
+            >>> wm = WesternMusic()
+            >>> scale_info = wm.get_scale_with_camelot('C', 4, 'major')
+            >>> 'camelot_notation' in scale_info
+            True
+            >>> 'compatible_keys' in scale_info
+            True
+        """
+        # Get the scale frequencies
+        scale_freqs = self.get_scale(root_note, octave, scale_type)
+        
+        # Get the Camelot notation
+        camelot = self.get_camelot_notation(root_note, scale_type)
+        
+        # Get compatible keys
+        compatible_keys = self.get_compatible_keys(camelot) if camelot else {}
+        
+        # Combine into one result
+        result = {
+            'frequencies': scale_freqs,
+            'camelot_notation': camelot,
+            'compatible_keys': compatible_keys
+        }
+        
+        return result
     
 '''
 "Sed haec quae de Musica breviter dicta sunt, tironibus interim satisfaciant,

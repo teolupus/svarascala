@@ -13,7 +13,7 @@ As Ni and Sancte sound complete.
 
 One breath, two voices, seven stars—
 The universe in vibrant song."
-— SavaraScala, 1st Git Commit
+— SavaraScala, 6ee6c386cfe3d78ae2e339befefef55f349d3fd4
 
 "যে স্রোতে জগতের খেলা, সেই স্রোতে আমার প্রাণের খেলা,
 তাহাতেই আমার আনন্দের তরঙ্গ বাজে।
