@@ -5,5 +5,7 @@ Indian musical systems.
 
 from .western import WesternMusic
 from .indian import IndianMusic
+from .navarasa import NavarasaMap
+from .modes import WesternModes
 
-__version__ = '0.1.0'
+__version__ = '1.1.0'
