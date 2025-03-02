@@ -115,6 +115,61 @@ def indian_raga_info(args):
     
     return 0
 
+def western_camelot_info(args):
+    """Display information about a key using Camelot Wheel notation"""
+    wm = WesternMusic(reference_a4=args.reference)
+    
+    try:
+        # If camelot notation is provided, convert to key
+        if args.camelot:
+            key, scale_type = wm.get_key_from_camelot(args.camelot)
+            print(f"\nCamelot Notation: {args.camelot}")
+            print(f"Corresponding Key: {key} {scale_type}")
+        else:
+            # Otherwise, use the provided key and scale type
+            key = args.key
+            scale_type = args.scale_type
+            camelot = wm.get_camelot_notation(key, scale_type)
+            print(f"\nKey: {key} {scale_type}")
+            print(f"Camelot Notation: {camelot}")
+        
+        # Get compatible keys regardless of input type
+        if args.camelot:
+            camelot_notation = args.camelot
+        else:
+            camelot_notation = wm.get_camelot_notation(key, scale_type)
+        
+        compatible_keys = wm.get_compatible_keys(camelot_notation)
+        
+        print("\nHarmonically Compatible Keys:")
+        print("-" * 60)
+        print(f"{'Camelot':<8} {'Key':<15} {'Relationship':<30}")
+        print("-" * 60)
+        
+        for notation, description in compatible_keys.items():
+            related_key, related_scale = wm.get_key_from_camelot(notation)
+            print(f"{notation:<8} {related_key} {related_scale:<10} {description}")
+        
+        # If requested, also show the scale frequencies
+        if args.with_frequencies:
+            if args.octave is None:
+                print("\nNote: Specify --octave to see frequencies")
+            else:
+                scale_with_camelot = wm.get_scale_with_camelot(key, args.octave, scale_type)
+                print(f"\nScale: {key} {scale_type}, Octave: {args.octave}")
+                print("-" * 40)
+                print(f"{'Note':<10} {'Frequency':<15}")
+                print("-" * 40)
+                
+                for note, freq in scale_with_camelot['frequencies'].items():
+                    print(f"{note:<10} {format_freq(freq)}")
+    
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return 1
+    
+    return 0
+
 def main():
     """Main entry point for the command line interface"""
     parser = argparse.ArgumentParser(description="SvaraScala - Musical frequency calculations")
@@ -133,6 +188,19 @@ def main():
     western_scale_parser.add_argument("--scale-type", default="major", help="Scale type (e.g., major, minor, blues)")
     western_scale_parser.add_argument("--reference", type=float, default=440.0, help="Reference frequency for A4 (default: 440 Hz)")
     
+    # Camelot Wheel parser
+    camelot_parser = subparsers.add_parser("camelot", help="Get information using Camelot Wheel notation")
+    camelot_group = camelot_parser.add_mutually_exclusive_group(required=True)
+    camelot_group.add_argument("--camelot", help="Camelot notation (e.g., 8B, 5A)")
+    camelot_group.add_argument("--key", help="Key name (e.g., C, F#)")
+    camelot_parser.add_argument("--scale-type", default="major", choices=["major", "minor"], 
+                            help="Scale type (required if using --key)")
+    camelot_parser.add_argument("--octave", type=int, help="Octave number (for frequency calculations)")
+    camelot_parser.add_argument("--with-frequencies", action="store_true", 
+                            help="Show frequencies (requires --octave)")
+    camelot_parser.add_argument("--reference", type=float, default=440.0, 
+                            help="Reference frequency for A4 (default: 440 Hz)")
+
     # Indian swara parser
     indian_swara_parser = subparsers.add_parser("indian-swara", help="Get information about an Indian swara")
     indian_swara_parser.add_argument("swara", help="Swara name (e.g., Sa, Re, Ga)")
@@ -155,6 +223,8 @@ def main():
         return western_note_info(args)
     elif args.command == "western-scale":
         return western_scale_info(args)
+    elif args.command == "camelot":
+        return western_camelot_info(args)
     elif args.command == "indian-swara":
         return indian_swara_info(args)
     elif args.command == "indian-raga":
