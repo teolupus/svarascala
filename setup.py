@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="svarascala",
-    version="1.0.0",
+    version="1.0.1",
     author="Bruno Lago",
     author_email="teolupus@gmail.com",
     description="A library for calculating musical frequencies across Western and Indian musical systems",

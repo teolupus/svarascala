@@ -1,5 +1,6 @@
 """
-SvaraScala - A library for calculating musical frequencies across Western and Indian musical systems
+SvaraScala - A library for calculating musical frequencies across Western and
+Indian musical systems.
 """
 
 from .western import WesternMusic

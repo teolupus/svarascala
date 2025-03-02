@@ -1,5 +1,6 @@
 """
-Examples demonstrating the SvaraScala library with both Western and Indian musical scales
+Examples demonstrating the SvaraScala library with both Western and Indian
+musical scales.
 
 "From Ut to Sa, the circle forms,
 Two ancient paths of sacred tones.
